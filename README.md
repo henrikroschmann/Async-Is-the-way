@@ -422,8 +422,8 @@ Conclusion: Use ConcurrentDictionary and ConcurrentBag for thread-safe operation
 Conclusion: Use Dictionary and List when thread safety is not a concern or when you can ensure proper synchronization.
 
 
-** There is so much more on this topic that I might add in the future and some parts I don't even know at this point. 
-The goal is to give a useful and descriptive overview on history and give food for thought. **
+**There is so much more to this topic that I might add in the future and some parts I don't even know at this point. 
+The goal is to give a useful and descriptive overview on history and give food for thought.**
 
 
 
