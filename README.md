@@ -1,6 +1,26 @@
 # Async-Is-the-way-
 It started out as a comparison between ConcurrentDictionary and Dictionary but turned into a history lesson 
 
+
+# Table of Contents
+1. [Async-Is-the-way-](#async-is-the-way-)
+2. [Introduction](#introduction)
+3. [Convert to Asynchronous](#convert-to-asynchronous)
+4. [Block or Not to Block](#block-or-not-to-block)
+5. [Async/await History](#asyncawait-history)
+6. [Dispose?](#dispose)
+7. [Return](#return)
+8. [Skipping Gears](#skipping-gears)
+9. [Awaits in Loops](#awaits-in-loops)
+10. [Calling Async Method in Synchronous Context](#calling-async-method-in-synchronous-context)
+11. [Other Known Issues with Async](#other-known-issues-with-async)
+    - [Populating Dictionaries](#populating-dictionaries)
+    - [Populating Lists](#populating-lists)
+12. [Conclusion](#conclusion)
+
+---
+
+
 # Introduction
 Async/ Await what a amazing piece of technology, the option to running processes in a non-blocking function.
 
@@ -114,6 +134,7 @@ Asynchronous functions, this is either a anonymous function or method they are d
 > ```csharp 
 > await SomeOperation();
 > ```
+// create code examples
 
 If the the expression what is being awaited isn't available yet, the async method will return immediately but when the value becomes available it will continue where it left off, in correct thread. 
 
@@ -154,7 +175,8 @@ static async Task ProcessDataAsync()
     await Task.Delay(2000); // Simulate a delay
     Console.WriteLine("Data processed.");
 }
-```
+``` 
+
 Explanation
 * await ProcessDataAsync(); calls an asynchronous method and waits for it to complete.
 
@@ -175,26 +197,233 @@ Continuation:
 
 Not really, let's use the example from above and let's say we would like to execute **ProcessDataAsync** for a multitude of files 
 
+
+### Skipping gears (reference to stick shift cars)
+
+There are scenarios where uneccessary state machine utilizatino is done given the following example:
+
+
 ```csharp
-int largeAmountOfFiles = 100.000;
-for (var i = 0; i < largeAmountOfFiles; i++)
+await SomeTransaction();
+
+public async Task SomeTransaction()
 {
-    await ProcessDataAsync() // method from example above 
+    await ExecuteTransaction();
+}
+
+public async Task ExecuteTransaction()
+{
+    await TheTransaction();
 }
 ```
 
+Using the metaphor of skipping gears: while driving a stick shift car, you aren't forced to use every gear sequentially—you can skip gears to accelerate more efficiently. In the same way, when awaiting asynchronous methods, you can skip intermediate methods to avoid additional overhead. By cutting out the middleman, you prevent unnecessary state machine allocations. See the revised example below:
 
 
+```csharp
+await SomeTransaction();
+
+public Task SomeTransaction()
+{
+    // Skipping the state machine creation here
+    ExecuteTransaction();
+}
+
+public async Task ExecuteTransaction()
+{
+    await TheTransaction();
+}
+``` 
+// create code examples
+
+
+#### Tell-tale Signs to Optimize async/await Usage:
+
+* **Simple Forwarding Methods**: If your asynchronous method is only awaiting another task and returning its result, consider removing the async keyword and directly returning the task to avoid unnecessary overhead.
+* **Performance Profiling**: If performance profiling indicates high overhead in simple async methods, removing unnecessary state machine overhead can be beneficial.
+* **High-Frequency Calls**: For methods that are called frequently and involve simple asynchronous forwarding, optimizing for reduced overhead can improve overall application performance.
+
+
+### What about awaits in loops? 
+
+```csharp
+var files = Directory.GetFiles(folderPath);
+foreach (var file in files)
+{
+    await ProcessDataAsync(file);
+}
+```
+If the goal is to chain the requests await the result of the previous execution this is a good approach but when you use await inside a loop like this, each iteration waits for the previous one to complete before starting the next. This sequential execution can be inefficient, especially if the operations are independent and can be executed concurrently. A better solution is to set up a task list and await them concurrently.
+
+```csharp
+var files = Directory.GetFiles(folderPath);
+// create task list 
+var tasks = files.Select(file => await ProcessDataAsync(file));
+// Parallel Processing
+Task.WhenAll(tasks);
+``` 
+// create code examples
+
+This is much more efficient for I/O-bound tasks, as it can process multiple files concurrently. It takes full advantage of the asynchronous programming model, potentially reducing overall processing time significantly.
+
+#### Tell-tale Signs to Use Task.WhenAll:
+
+* **Independent Tasks**: When you have multiple asynchronous tasks that can run independently and do not depend on each other, using Task.WhenAll can significantly improve performance.
+* **Sequential Loop Execution**: If you're currently using await inside a loop, leading to sequential execution, refactoring to use Task.WhenAll can make the operations concurrent and more efficient.
+* **Performance Bottlenecks**: If performance profiling indicates that sequential execution of tasks is a bottleneck, consider using Task.WhenAll to execute them concurrently.
+* **Handling Multiple Requests**: When dealing with a batch of requests (e.g., sending multiple mediator requests), using Task.WhenAll allows you to manage and await all requests efficiently.
+
+
+
+### Calling a Async method in a synchronous context
+
+Calling an asynchronous method in a synchronous context is possible. It is done using GetAwaiter().GetResult(), but it should be done with caution due to potential issues such as deadlocks. 
+
+```csharp
+var result = TaskAsync.GetAwaiter().GetResult();
+
+public async Task<string> TaskAsync()
+{
+    await Task.Delay(1000);
+    return "Complete";
+}
+```
+[Example in code](./Sample/AsyncSamples/AsyncInSynchronous.cs)
+
+
+Using GetAwaiter().GetResult() can cause deadlocks in certain synchronization contexts, particularly in GUI applications or ASP.NET environments where the synchronization context captures the current thread.
+
+This approach blocks the calling thread, negating the benefits of asynchronous programming. It should be used sparingly and only when absolutely necessary.
+
+If you need to call an asynchronous method from a synchronous context, consider the following. 
+
+* Avoid blocking calls 
+* ConfigureAwait, use ConfigureAwait(false) in your asynchronous methods to avoid capturing the synchronization context, which can help prevent deadlocks.
+
+Updated example:
+```csharp
+var result = TaskAsync.GetAwaiter().GetResult();
+
+public async Task<string> TaskAsync()
+{
+    await Task.Delay(1000).ConfigureAwait(false);
+    return "Complete";
+}
+```
+[Example in code](./Sample/AsyncSamples/AsyncInSynchronous2.cs)
+
+### Other known issues with it comes to Async 
+
+#### Populating dictionaries
+
+Will not go into depth about dictionaries here, it's a container that maintenance a key-value pair. 
+
+```csharp
+private static Dictionary<int, string> dict = new Dictionary<int, string>();
+var tasks = new List<Task>();
+for (int i = 0; i < 10; i++)
+{
+    int localI = i;
+    tasks.Add(Task.Run(() => AddItem(localI)));
+}
+
+Task.WhenAll(tasks).Wait();
+
+private static void AddItem(int i)
+    {
+        lock (dict)
+        {
+            dict[i] = $"Value {i}";
+        }
+    }
+```
+[Example in code](./Sample/AsyncSamples/DictionaryInAsyncLoop.cs)
+
+In this scenario we don't know when the key is added to the dictionary due to Task.WhenAll execute the operations in parallel. We can end up with key duplication in the dictionary. This can be prevented with the introduction of locks or utilize libs like semaphoreSlim or... the built in **ConcurrentDictionary**
+
+```csharp
+ private static ConcurrentDictionary<int, string> dict = new ConcurrentDictionary<int, string>();
+var tasks = new List<Task>();
+for (int i = 0; i < 10; i++)
+{
+    int localI = i;
+    tasks.Add(Task.Run(() => AddItem(localI)));
+}
+
+Task.WhenAll(tasks).Wait();
+
+private static void AddItem(int i)
+    {
+        lock (dict)
+        {
+            dict[i] = $"Value {i}";
+        }
+    }
+```
+[Example in code](./Sample/AsyncSamples/ConcurrentDictionaryInAsyncLoop.cs)
+
+Locks where just mentioned and this is what is use in the concurrentDictionary. What does lock do? Even if the execution is async and running in parallel the lock will serialize the approach. 
+
+
+#### Populating Lists
+
+List is a container that stores item of specified type. Like with the previous example 
+
+```csharp
+private static List<int> list = new List<int>();
+var tasks = new List<Task>();
+
+for (int i = 0; i < 10; i++)
+{
+    int localI = i;
+    tasks.Add(Task.Run(() => AddItem(localI)));
+}
+
+Task.WhenAll(tasks).Wait()
+
+private static void AddItem(int i)
+{
+    lock (list)
+    {
+        list.Add(i);
+    }
+}
+```
+[Example in code](./Sample/AsyncSamples/ListExample.cs)
+
+
+A ConcurrentBag is designed for concurrent access from multiple threads, whereas a List is not thread-safe and should not be accessed concurrently without external synchronization. Here are examples demonstrating the differences:
+
+```csharp
+private static ConcurrentBag<int> bag = new ConcurrentBag<int>();
+var tasks = new List<Task>();
+
+for (int i = 0; i < 10; i++)
+{
+    int localI = i;
+    tasks.Add(Task.Run(() => AddItem(localI)));
+}
+
+Task.WhenAll(tasks).Wait()
+
+private static void AddItem(int i)
+{
+    lock (list)
+    {
+        list.Add(i);
+    }
+}
+```
+[Example in code](./Sample/AsyncSamples/ConcurrentBagExample.cs)
+
+
+Conclusion: Use ConcurrentDictionary and ConcurrentBag for thread-safe operations without needing explicit locks.
+
+Conclusion: Use Dictionary and List when thread safety is not a concern or when you can ensure proper synchronization.
 
 
 ** There is so much more on this topic that I might add in the future and some parts I don't even know at this point. 
 The goal is to give a useful and descriptive overview on history and give food for thought. **
 
-* Example of when to skip async await to reduce ease the load of the state machine 
-* Example calling a Async method in a synchrououse context
 
-* Example of Task.WhenAny / Task.WhenAll ( provide example code ) Related to state machine 
-* Example of concurrent Dictionary vs DIctionary ( provide example code)
-* Example of concurrentBad vs list  ( provide example code )
 
-* Example semaphoreSlim for awaiting 
