@@ -142,13 +142,55 @@ Source: *Flow in a asynchronous method .NET 5, C# in depth, Jon skeet*
 
 Example: When you order a pizza you typically don't stand in the door and wait for the delivery dude/dudette to come (synchronous approach). You **await** after the call by returning to your standard task of watching tv until the token, pizza, arrives at the door and you take next action (Async). 
 
+## let's dig 🪓 deeper State Machine
+
+
+```csharp
+await ProcessDataAsync();
+
+static async Task ProcessDataAsync()
+{
+    Console.WriteLine("Starting data processing...");
+    await Task.Delay(2000); // Simulate a delay
+    Console.WriteLine("Data processed.");
+}
+```
+Explanation
+* await ProcessDataAsync(); calls an asynchronous method and waits for it to complete.
+
+ProcessDataAsync Method:
+* Marked as async, indicating it contains asynchronous operations.
+* await Task.Delay(2000); is an asynchronous operation that simulates a delay of 2 seconds.
+
+State machine 
+* The state machine saves the current position and schedules the continuation of the method after the delay completes.
+* The state machine allows the thread to do other work while waiting for the delay to complete.
+
+Continuation:
+* After the 2-second delay, the state machine resumes execution from where it left off.
+* It moves to the next state, printing "Data processed." and eventually completes the method.
+
+
+## So conclusion async all the way?
+
+Not really, let's use the example from above and let's say we would like to execute **ProcessDataAsync** for a multitude of files 
+
+```csharp
+int largeAmountOfFiles = 100.000;
+for (var i = 0; i < largeAmountOfFiles; i++)
+{
+    await ProcessDataAsync() // method from example above 
+}
+```
+
+
 
 
 
 ** There is so much more on this topic that I might add in the future and some parts I don't even know at this point. 
 The goal is to give a useful and descriptive overview on history and give food for thought. **
 
-
+* Example of when to skip async await to reduce ease the load of the state machine 
 * Example calling a Async method in a synchrououse context
 
 * Example of Task.WhenAny / Task.WhenAll ( provide example code ) Related to state machine 
