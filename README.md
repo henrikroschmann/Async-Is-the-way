@@ -122,7 +122,7 @@ When discussing threading in Windows Forms there are two golden rules
 * Don't perform any time-consuming action on the UI thread 
 * Don't access any UI controls *other* than on the UI thread
 
-.Net has embraced asynchronism wholeheartedly with the task-based asynchronous pattern to be consistent across multiple APIs. However it is not omniscient it cannot guess when to perform a task synchronously and asynchronously. NET 5 removed most of the boilerplate code needed without the need for fluff we are now left with **async Task** and **await** 
+.Net has embraced asynchronism wholeheartedly with the task-based asynchronous pattern to be consistent across multiple APIs. However, it is not omniscient it cannot guess when to perform a task synchronously and asynchronously. NET 5 removed most of the boilerplate code needed without the need for fluff we are now left with **async Task** and **await** 
 
 Asynchronous functions, this is either an anonymous function or methods that are declared using **async** modifier, and they can include **await** expressions. The **await** expression is where it gets interesting.
 
@@ -136,7 +136,7 @@ Asynchronous functions, this is either an anonymous function or methods that are
 > ```
 // create code examples
 
-If the expression what is being awaited isn't available yet, the async method will return immediately but when the value becomes available it will continue where it left off, in the correct thread. 
+If the awaited expression isn't available yet, the async method will return immediately. Once the value becomes available, it will resume execution from where it paused, in the correct thread.
 
 
 ### What about the compiler? How does it work? 
@@ -148,9 +148,9 @@ Console.WriteLine("First we have winter");
 Console.WriteLine("After winter we have summer");
 ```
 
-Synchronously we expect the first call to complete *"First we have winter"* and then the second *"After winter we have summer"*. Execution flows from one to the other. However, a asynchronous execution model does not work like that. It is all about *continuations*. When you start doing something you also say what you expect to happen next. My example above is somewhat silly but let's say that operation one requires more computation or latency if we have external API calls the one that returns first wins the race so we can end up with operation 2 returning before operation 1. 
+Synchronously we expect the first call to complete *"First we have winter"* and then the second *"After winter we have summer"*. Execution flows from one to the other. However, an asynchronous execution model does not work like that. It is all about *continuations*. When you start doing something you also say what you expect to happen next. My example above is somewhat silly but let's say that operation one requires more computation or latency if we have external API calls the one that returns first wins the race so we can end up with operation 2 returning before operation 1. 
 
-When a task is awaited in an async context the async operation starts and returns a token that can be used to provide the continuation later on. This token represents an ongoing operation that might have been completed or is still in progress. Typically the token is in the form of **Task** or **Task<TResult>**
+When a task is awaited in an async context the async operation starts and returns a token that can be used to provide the continuation later on. This token represents an ongoing operation that might have been completed or is still in progress. Typically the token is in the form of **Task** or **Task< TResult >**
 
 > 1. Do some work
 > 2. Start an asynchronous operation and remember the token it returns
