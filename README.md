@@ -3,7 +3,7 @@ It started out as a comparison between ConcurrentDictionary and Dictionary but t
 
 
 # Table of Contents
-1. [Async-Is-the-way-](#async-is-the-way-)
+1. [Async-Is-the-way](#async-is-the-way)
 2. [Introduction](#introduction)
 3. [Convert to Asynchronous](#convert-to-asynchronous)
 4. [Block or Not to Block](#block-or-not-to-block)
@@ -22,7 +22,7 @@ It started out as a comparison between ConcurrentDictionary and Dictionary but t
 
 
 # Introduction
-Async/ Await what a amazing piece of technology, the option to running processes in a non-blocking function.
+Async/ Await what an amazing piece of technology, the option to run processes in a non-blocking function.
 
 Let's start from the top
 
@@ -31,11 +31,11 @@ Let's start from the top
 public void CopyStreamToStream(Stream source, Stream destination)
 {   
     // Initialize a buffer with a size of 4096 byte
-    // The value 0x1000 is in hexadecimal notation, which is equivalent to 4096 in decimal.
+    // The value 0x1000 is in hexadecimal notation, equivalent to 4096 in decimal.
     var buffer = new byte[0x1000]; 
     // This buffer will be used to read and store chunks of data during streaming operations.
     // The code snippet is commonly used when handling streams (e.g., reading from a file or network stream).
-    // It reads data in chunks (streaming) rather than loading the entire data into memory at once.
+    // It reads data in chunks (streaming) rather than loading the entire data into memory simultaneously.
 
     int numRead;
     while ((numRead = source.Read(buffer, 0, buffer.Length)) != 0)
@@ -48,7 +48,7 @@ public void CopyStreamToStream(Stream source, Stream destination)
 
 ##### *Explain the code:*
 *The source.Read(buffer, 0, buffer.Length) reads a chunk of data from the source stream into the buffer. 
-The numRead variable holds the actual number of bytes read (which may be less than the buffer size). 
+The numRead variable holds the number of bytes read (which may be less than the buffer size). 
 The destination.Write(buffer, 0, numRead) writes that chunk to the destination stream. This process repeats until all data is transferred.*
 
 
@@ -58,7 +58,7 @@ The destination.Write(buffer, 0, numRead) writes that chunk to the destination s
 > -   *If it were too large (e.g., 1 GB), it would waste memory.*
 > -   *16 KB strikes a balance between efficiency and memory usage.*
 
-Let's convert this method into a asynchronous one 
+Let's convert this method into an asynchronous one 
 
 ```csharp
 public async Task CopyStreamToStreamAsync(Stream source, Stream destination)
@@ -73,18 +73,18 @@ public async Task CopyStreamToStreamAsync(Stream source, Stream destination)
 }
 ```
 
-If you look a this code in a sloppy manner you would not even notice the difference, sure we added some extra keywords like **async** and **await** also **Task** instead of **void**. So what is the difference, what does it mean? 
+If you sloppily look a the code you would not even notice the difference sure we added some extra keywords like **async** and **await** also **Task** instead of **void**. So what is the difference, what does it mean? 
 
 ## Block or not to block that is the question. 
-The first example has a serial approach we execute the method and only that, we halt the freeze the application we block everything else. All eyes on it someone screaming "ME ME ME". 
+The first example has a serial approach we execute the method and only that, we halt the freeze of the application we block everything else. All eyes are on it someone screaming "ME ME ME". 
 
 The async approach is working in a non-blocking fashion, let's dig deeper into what happens. 
 
 ## Async/ await will rock your world
 
-If we backtrack to .NET Framework 1.0 there was a Asynchronous Programming Model pattern called the APM pattern, also known as teh Begin/End pattern. Asynchronous has been a thorn in the side of developers for years, it has been described to be a useful way to avoid tying up a thread while waiting for some arbitrary task to complete, it has also been a pain to implement correctly, source: C# in depth, Jon skeet. 
+If we backtrack to .NET Framework 1.0 there was an Asynchronous Programming Model pattern called the APM pattern, also known as the Begin/End pattern. Asynchronous has been a thorn in the side of developers for years, it has been described to be a useful way to avoid tying up a thread while waiting for some arbitrary task to complete, but it has also been a pain to implement correctly, source: C# in depth, Jon skeet. 
 
-> .Net Framework 1.x The BeginFoo / EndFoo approach using IAsyncResult and AsyncCallback to propagate result 
+> .Net Framework 1.x The BeginFoo / EndFoo approach using IAsyncResult and AsyncCallback to propagate the result 
 [Example: .NET Framework 1.x: Using BeginFoo / EndFoo with IAsyncResult and AsyncCallback](./Sample/AsyncWillRockYourWorld/Net1BeginEnd.cs)
 
 .NET Framework 1.x: This version uses the BeginFoo/EndFoo pattern, which is quite low-level and involves manually managing asynchronous operations using IAsyncResult and AsyncCallback.
@@ -111,20 +111,20 @@ What about **DISPOSE**?, Stephen Toub, explains it well in the following [articl
 >“Task implements IDisposable and exposes a Dispose method.  
 >Does that mean I should dispose of all of my tasks?”
 >
->In short - “No.  Don’t bother disposing of your tasks.” You don't need to dispose tasks in general. 
+>In short - “No.  Don’t bother disposing of your tasks.” You don't need to dispose of tasks in general. 
 >There might be scenarios where Dispose can be utilized if you require full control, but not in general.
 
 ### Let's return 
 
-In short Asynchronous operation will not halt all operation, example freeze the UI, while executing operations. 
+In short Asynchronous operations will not halt all operations, for example, freeze the UI, while executing operations. 
 When discussing threading in Windows Forms there are two golden rules 
 
 * Don't perform any time-consuming action on the UI thread 
 * Don't access any UI controls *other* than on the UI thread
 
-.Net has embraced asynchronism wholeheartedly with the task-based asynchronous pattern to be consistent across multiple APIs. But it is not omniscient it cannot guess when to perform task synchronously and asynchronously. NET 5 removed most of the boilerplate code needed without the need for fluff we are now left with **async Task** and **await** 
+.Net has embraced asynchronism wholeheartedly with the task-based asynchronous pattern to be consistent across multiple APIs. However it is not omniscient it cannot guess when to perform a task synchronously and asynchronously. NET 5 removed most of the boilerplate code needed without the need for fluff we are now left with **async Task** and **await** 
 
-Asynchronous functions, this is either a anonymous function or method they are declared using **async** modifier, and it can include **await** expressions. The **await** expression is where it gets interesting.
+Asynchronous functions, this is either an anonymous function or methods that are declared using **async** modifier, and they can include **await** expressions. The **await** expression is where it gets interesting.
 
 > **Anonymous function** using Task.Run
 > ```csharp 
@@ -136,7 +136,7 @@ Asynchronous functions, this is either a anonymous function or method they are d
 > ```
 // create code examples
 
-If the the expression what is being awaited isn't available yet, the async method will return immediately but when the value becomes available it will continue where it left off, in correct thread. 
+If the expression what is being awaited isn't available yet, the async method will return immediately but when the value becomes available it will continue where it left off, in the correct thread. 
 
 
 ### What about the compiler? How does it work? 
@@ -148,9 +148,9 @@ Console.WriteLine("First we have winter");
 Console.WriteLine("After winter we have summer");
 ```
 
-In a synchronous way we expect the first call to complete *"First we have winter"* and then the second *"After winter we have summer"*. Execution flows from one to the other. But a asynchronous execution model does not work like that. It is all about *continuations*. WHen you start doing something you also say what you expect to happen next. My example above is somewhat silly but let's say that operation one requires more computation or latency if we have external API calls the one that returns first wins the race so we can end up with operation 2 returning before operation 1. 
+Synchronously we expect the first call to complete *"First we have winter"* and then the second *"After winter we have summer"*. Execution flows from one to the other. However, a asynchronous execution model does not work like that. It is all about *continuations*. When you start doing something you also say what you expect to happen next. My example above is somewhat silly but let's say that operation one requires more computation or latency if we have external API calls the one that returns first wins the race so we can end up with operation 2 returning before operation 1. 
 
-When a task is awaited in a async context the async operation starts and returns a token that can be used to provide the continuation later on. This token represents a ongoing operation that might have completed or is still in progress. Typically the token is in the form of **Task** or **Task<TResult>**
+When a task is awaited in an async context the async operation starts and returns a token that can be used to provide the continuation later on. This token represents an ongoing operation that might have been completed or is still in progress. Typically the token is in the form of **Task** or **Task<TResult>**
 
 > 1. Do some work
 > 2. Start an asynchronous operation and remember the token it returns
@@ -161,7 +161,7 @@ When a task is awaited in a async context the async operation starts and returns
 
 Source: *Flow in a asynchronous method .NET 5, C# in depth, Jon skeet*
 
-Example: When you order a pizza you typically don't stand in the door and wait for the delivery dude/dudette to come (synchronous approach). You **await** after the call by returning to your standard task of watching tv until the token, pizza, arrives at the door and you take next action (Async). 
+Example: When you order a pizza you typically don't stand in the door and wait for the delivery dude/dudette to come (synchronous approach). You **await** after the call by returning to your standard task of watching TV until the token, pizza arrives at the door and you take the next action (Async). 
 
 ## let's dig 🪓 deeper State Machine
 
@@ -198,9 +198,9 @@ Continuation:
 Not really, let's use the example from above and let's say we would like to execute **ProcessDataAsync** for a multitude of files 
 
 
-### Skipping gears (reference to stick shift cars)
+### Skipping gears (a reference to stick shift cars)
 
-There are scenarios where uneccessary state machine utilizatino is done given the following example:
+There are scenarios where unnecessary state machine utilization is done given the following example:
 
 
 ```csharp
@@ -253,7 +253,7 @@ foreach (var file in files)
     await ProcessDataAsync(file);
 }
 ```
-If the goal is to chain the requests await the result of the previous execution this is a good approach but when you use await inside a loop like this, each iteration waits for the previous one to complete before starting the next. This sequential execution can be inefficient, especially if the operations are independent and can be executed concurrently. A better solution is to set up a task list and await them concurrently.
+If the goal is to chain the requests to await the result of the previous execution this is a good approach but when you use await inside a loop like this, each iteration waits for the previous one to complete before starting the next. This sequential execution can be inefficient, especially if the operations are independent and can be executed concurrently. A better solution is to set up a task list and await them concurrently.
 
 ```csharp
 var files = Directory.GetFiles(folderPath);
@@ -275,7 +275,7 @@ This is much more efficient for I/O-bound tasks, as it can process multiple file
 
 
 
-### Calling a Async method in a synchronous context
+### Calling an Async method in a synchronous context
 
 Calling an asynchronous method in a synchronous context is possible. It is done using GetAwaiter().GetResult(), but it should be done with caution due to potential issues such as deadlocks. 
 
@@ -293,7 +293,7 @@ public async Task<string> TaskAsync()
 
 Using GetAwaiter().GetResult() can cause deadlocks in certain synchronization contexts, particularly in GUI applications or ASP.NET environments where the synchronization context captures the current thread.
 
-This approach blocks the calling thread, negating the benefits of asynchronous programming. It should be used sparingly and only when absolutely necessary.
+This approach blocks the calling thread, negating the benefits of asynchronous programming. It should be used sparingly and only when necessary.
 
 If you need to call an asynchronous method from a synchronous context, consider the following. 
 
@@ -316,7 +316,7 @@ public async Task<string> TaskAsync()
 
 #### Populating dictionaries
 
-Will not go into depth about dictionaries here, it's a container that maintenance a key-value pair. 
+Will not go into depth about dictionaries here, it's a container that maintains a key-value pair. 
 
 ```csharp
 private static Dictionary<int, string> dict = new Dictionary<int, string>();
@@ -339,7 +339,7 @@ private static void AddItem(int i)
 ```
 [Example in code](./Sample/AsyncSamples/DictionaryInAsyncLoop.cs)
 
-In this scenario we don't know when the key is added to the dictionary due to Task.WhenAll execute the operations in parallel. We can end up with key duplication in the dictionary. This can be prevented with the introduction of locks or utilize libs like semaphoreSlim or... the built in **ConcurrentDictionary**
+In this scenario, we don't know when the key is added to the dictionary due to Task.WhenAll executes the operations in parallel. We can end up with key duplication in the dictionary. This can be prevented with the introduction of locks or utilising libs like semaphoreSlim or... the built-in **ConcurrentDictionary**
 
 ```csharp
  private static ConcurrentDictionary<int, string> dict = new ConcurrentDictionary<int, string>();
@@ -362,12 +362,12 @@ private static void AddItem(int i)
 ```
 [Example in code](./Sample/AsyncSamples/ConcurrentDictionaryInAsyncLoop.cs)
 
-Locks where just mentioned and this is what is use in the concurrentDictionary. What does lock do? Even if the execution is async and running in parallel the lock will serialize the approach. 
+Locks were just mentioned and this is what is used in the concurrentDictionary. What does lock do? Even if the execution is async and running in parallel the lock will serialize the approach. 
 
 
 #### Populating Lists
 
-List is a container that stores item of specified type. Like with the previous example 
+A list is a container that stores items of specified type. Like with the previous example 
 
 ```csharp
 private static List<int> list = new List<int>();
@@ -423,7 +423,7 @@ Conclusion: Use Dictionary and List when thread safety is not a concern or when 
 
 
 **There is so much more to this topic that I might add in the future and some parts I don't even know at this point. 
-The goal is to give a useful and descriptive overview on history and give food for thought.**
+The goal is to give a useful and descriptive overview of history and give food for thought.**
 
 
 
